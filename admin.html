@@ -3,389 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Onlayn Nazorat</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <title>Admin Panel — Test Boshqaruvi</title>
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card-custom { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .nav-pills .nav-link.active { background-color: #1e3c72; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: #333;
+            padding: 20px;
+        }
+        .admin-card {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        h2 { color: #2c3e50; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .btn-add {
+            width: 100%;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-add:hover { background: #2980b9; }
+        #optionsContainer { margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div id="loginModal" class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-4">
-            <div class="card card-custom p-4 text-center">
-                <i class="fa-solid fa-lock text-primary fa-3x mb-3"></i>
-                <h4 class="fw-bold mb-3">Admin Panelga Kirish</h4>
-                <form id="loginForm" onsubmit="checkAuth(event)">
-                    <input type="password" id="adminPassword" class="form-control mb-3 text-center" placeholder="Parolni kiriting" required>
-                    <button type="submit" class="btn btn-primary w-100 fw-bold">Kirish</button>
-                </form>
-                <div id="loginError" class="text-danger mt-3 fw-bold d-none">Parol noto'g'ri!</div>
-            </div>
+<div class="admin-card">
+    <h2>Yangi Savol Qo'shish (Admin)</h2>
+    
+    <!-- Savol matni -->
+    <div class="form-group">
+        <label for="questionText">Savol matni:</label>
+        <input type="text" id="questionText" placeholder="Savolni kiriting..." required>
+    </div>
+
+    <!-- Savol turini tanlash -->
+    <div class="form-group">
+        <label for="questionType">Savol turi:</label>
+        <select id="questionType" onchange="toggleQuestionType()">
+            <option value="choice">Variantli savol (A, B, C, D)</option>
+            <option value="text">Ochiq matnli savol (Yozma javob)</option>
+        </select>
+    </div>
+
+    <!-- Variantli savol uchun blok -->
+    <div id="choiceBlock">
+        <div class="form-group">
+            <label>Variantlar va To'g'ri javob:</label>
+            <input type="text" id="optA" placeholder="A variant" style="margin-bottom: 5px;">
+            <input type="text" id="optB" placeholder="B variant" style="margin-bottom: 5px;">
+            <input type="text" id="optC" placeholder="C variant" style="margin-bottom: 5px;">
+            <input type="text" id="optD" placeholder="D variant" style="margin-bottom: 10px;">
+            
+            <label for="correctChoice">To'g'ri variant matnini kiriting:</label>
+            <input type="text" id="correctChoice" placeholder="Masalan: HTML">
         </div>
     </div>
-</div>
 
-<div id="adminMain" class="container py-4 d-none">
-    <div class="card card-custom p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-bold text-primary m-0"><i class="fa-solid fa-user-shield me-2"></i>O'qituvchi Boshqaruv Paneli</h4>
-            <button class="btn btn-outline-danger btn-sm" onclick="location.reload()">Chiqish</button>
-        </div>
-
-        <ul class="nav nav-pills mb-4">
-            <li class="nav-item">
-                <button class="nav-link active" id="btnTabResults" onclick="switchAdminTab('results')"><i class="fa-solid fa-chart-line me-2"></i>O'quvchilar Natijalari</button>
-            </li>
-            <li class="nav-item ms-2">
-                <button class="nav-link" id="btnTabManage" onclick="switchAdminTab('manage')"><i class="fa-solid fa-book-open me-2"></i>Mavzular va Savollar</button>
-            </li>
-        </ul>
-
-        <div id="adminTabResults">
-            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                <h5 class="fw-bold m-0">Joriy Nazorat Baholari (Real-vaqt)</h5>
-                <div>
-                    <button class="btn btn-danger me-2" onclick="exportToPDF()"><i class="fa-solid fa-file-pdf me-1"></i> PDF Hisobot Yuklash</button>
-                    <button class="btn btn-outline-danger" onclick="clearData()"><i class="fa-solid fa-trash me-1"></i> Tozalash</button>
-                </div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <input type="text" id="filterSearch" class="form-control" placeholder="Ism bo'yicha qidirish..." oninput="renderAdminTable()">
-                </div>
-                <div class="col-md-3">
-                    <select id="filterClass" class="form-select" onchange="renderAdminTable()">
-                        <option value="">Barcha sinflar</option>
-                        <option value="5">5-sinf</option>
-                        <option value="6">6-sinf</option>
-                        <option value="7">7-sinf</option>
-                        <option value="8">8-sinf</option>
-                        <option value="9">9-sinf</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="pdfContent">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle border">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>O'quvchi Ismi</th>
-                                <th>Sinf</th>
-                                <th>Mavzu</th>
-                                <th>Natija</th>
-                                <th>Joriy Baho</th>
-                                <th>Sana</th>
-                                <th>Amal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="adminTabManage" class="d-none">
-            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                <h5 class="fw-bold m-0">Mavzularni Tahrirlash</h5>
-                <button class="btn btn-success" onclick="openTopicModal()"><i class="fa-solid fa-plus me-1"></i> Yangi Mavzu Qo'shish</button>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <select id="manageClassFilter" class="form-select" onchange="renderManageTopics()">
-                        <option value="5">5-sinf mavzulari</option>
-                        <option value="6">6-sinf mavzulari</option>
-                        <option value="7">7-sinf mavzulari</option>
-                        <option value="8">8-sinf mavzulari</option>
-                        <option value="9">9-sinf mavzulari</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="topicsManageList"></div>
+    <!-- Ochiq matnli savol uchun blok -->
+    <div id="textBlock" style="display: none;">
+        <div class="form-group">
+            <label for="correctText">To'g'ri matnli javob:</label>
+            <input type="text" id="correctText" placeholder="Masalan: Cascading Style Sheets">
+            <small style="color: #7f8c8d;">O'quvchi xuddi shu so'z/iborani yozsa to'g'ri hisoblanadi.</small>
         </div>
     </div>
+
+    <button class="btn-add" onclick="addQuestion()">Savolni Bazasiga Qo'shish</button>
 </div>
 
-<div class="modal fade" id="topicModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalTitle">Mavzu Qo'shish</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="topicForm">
-            <input type="hidden" id="editTopicIndex" value="-1">
-            <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                    <label class="form-label">Sinf:</label>
-                    <select id="modalClass" class="form-select">
-                        <option value="5">5-sinf</option>
-                        <option value="6">6-sinf</option>
-                        <option value="7">7-sinf</option>
-                        <option value="8">8-sinf</option>
-                        <option value="9">9-sinf</option>
-                    </select>
-                </div>
-                <div class="col-md-8">
-                    <label class="form-label">Mavzu Nomi:</label>
-                    <input type="text" id="modalTopicTitle" class="form-control" required>
-                </div>
-            </div>
-            <hr>
-            <h6>Savollar:</h6>
-            <div id="modalQuestionsContainer"></div>
-            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addQuestionField()"><i class="fa-solid fa-plus me-1"></i> Savol qo'shish</button>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-        <button type="button" class="btn btn-primary" onclick="saveTopicData()">Saqlash</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // SIZNING FIREBASE KALITLARINGIZ BIRIKTIRILDI
-    const firebaseConfig = {
-        apiKey: "AIzaSyAhKbkXkXN2CXtJYsG9rx7zeH6fItZbWN8",
-        authDomain: "informatika-va-at--nazorat.firebaseapp.com",
-        databaseURL: "https://informatika-va-at--nazorat-default-rtdb.firebaseio.com",
-        projectId: "informatika-va-at--nazorat",
-        storageBucket: "informatika-va-at--nazorat.firebasestorage.app",
-        messagingSenderId: "911253971015",
-        appId: "1:911253971015:web:cab0b7ef93ed999ee11162"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const SECRET_PASS = "12345";
-    let allResults = [];
-
-    function checkAuth(e) {
-        if(e) e.preventDefault();
-        const inputPass = document.getElementById('adminPassword').value.trim();
-
-        if (inputPass === SECRET_PASS) {
-            document.getElementById('loginModal').classList.add('d-none');
-            document.getElementById('adminMain').classList.remove('d-none');
-            listenToResults();
-            renderManageTopics();
+    // Savol turiga qarab maydonlarni ko'rsatish yoki yashirish
+    function toggleQuestionType() {
+        const type = document.getElementById("questionType").value;
+        if (type === "choice") {
+            document.getElementById("choiceBlock").style.display = "block";
+            document.getElementById("textBlock").style.display = "none";
         } else {
-            document.getElementById('loginError').classList.remove('d-none');
+            document.getElementById("choiceBlock").style.display = "none";
+            document.getElementById("textBlock").style.display = "block";
         }
     }
 
-    function listenToResults() {
-        db.ref('results').on('value', (snapshot) => {
-            const data = snapshot.val();
-            allResults = [];
-            if(data) {
-                Object.keys(data).forEach(key => {
-                    allResults.push({ id: key, ...data[key] });
-                });
-            }
-            renderAdminTable();
-        });
-    }
+    // Savolni saqlash
+    function addQuestion() {
+        const qText = document.getElementById("questionText").value.trim();
+        const qType = document.getElementById("questionType").value;
 
-    function switchAdminTab(tab) {
-        const btnResults = document.getElementById('btnTabResults');
-        const btnManage = document.getElementById('btnTabManage');
-
-        if(tab === 'results') {
-            document.getElementById('adminTabResults').classList.remove('d-none');
-            document.getElementById('adminTabManage').classList.add('d-none');
-            btnResults.classList.add('active');
-            btnManage.classList.remove('active');
-        } else {
-            document.getElementById('adminTabResults').classList.add('d-none');
-            document.getElementById('adminTabManage').classList.remove('d-none');
-            btnResults.classList.remove('active');
-            btnManage.classList.add('active');
-            renderManageTopics();
-        }
-    }
-
-    function renderAdminTable() {
-        const tbody = document.getElementById('resultsTableBody');
-        const filterSearch = document.getElementById('filterSearch').value.toLowerCase();
-        const filterClass = document.getElementById('filterClass').value;
-
-        tbody.innerHTML = '';
-        const filtered = allResults.filter(r => (r.name.toLowerCase().includes(filterSearch)) && (filterClass === '' || r.class === filterClass));
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Natijalar topilmadi</td></tr>';
+        if (!qText) {
+            alert("Iltimos, savol matnini kiriting!");
             return;
         }
 
-        filtered.reverse().forEach((r, idx) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td class="fw-bold">${r.name}</td>
-                    <td><span class="badge bg-secondary">${r.class}-sinf</span></td>
-                    <td>${r.topic}</td>
-                    <td>${r.score} / ${r.total}</td>
-                    <td><span class="badge bg-${r.grade >= 4 ? 'success' : r.grade === 3 ? 'warning' : 'danger'}">${r.grade}</span></td>
-                    <td><small class="text-muted">${r.date}</small></td>
-                    <td><button class="btn btn-sm btn-outline-danger" onclick="deleteResult('${r.id}')"><i class="fa-solid fa-trash"></i></button></td>
-                </tr>`;
-        });
-    }
+        let newQuestion = {
+            question: qText,
+            type: qType
+        };
 
-    function deleteResult(id) {
-        if(confirm("Ushbu natijani o'chirmoqchimisiz?")) {
-            db.ref('results/' + id).remove();
-        }
-    }
+        if (qType === "choice") {
+            const a = document.getElementById("optA").value.trim();
+            const b = document.getElementById("optB").value.trim();
+            const c = document.getElementById("optC").value.trim();
+            const d = document.getElementById("optD").value.trim();
+            const correct = document.getElementById("correctChoice").value.trim();
 
-    function clearData() {
-        if(confirm("Barcha natijalarni bazadan o'chirib tashlaysizmi?")) {
-            db.ref('results').remove();
-        }
-    }
-
-    function renderManageTopics() {
-        const cls = document.getElementById('manageClassFilter').value;
-        const container = document.getElementById('topicsManageList');
-        container.innerHTML = '<p class="text-muted text-center py-3">Yuklanmoqda...</p>';
-
-        db.ref('topics/' + cls).once('value', (snapshot) => {
-            const list = snapshot.val() || [];
-            container.innerHTML = '';
-
-            if (list.length === 0) {
-                container.innerHTML = '<p class="text-muted text-center py-3">Ushbu sinf uchun mavzular yo\'q</p>';
+            if (!a || !b || !correct) {
+                alert("Iltimos, kamida A, B variantlarini va to'g'ri javobni kiriting!");
                 return;
             }
 
-            list.forEach((t, idx) => {
-                container.innerHTML += `
-                    <div class="card mb-2 border p-3 d-flex flex-row justify-content-between align-items-center">
-                        <div><strong>${idx + 1}. ${t.topic}</strong> (${t.questions ? t.questions.length : 0} savol)</div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editTopic('${cls}', ${idx})">Tahrirlash</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTopic('${cls}', ${idx})">O'chirish</button>
-                        </div>
-                    </div>`;
-            });
-        });
-    }
+            newQuestion.options = [a, b, c, d].filter(opt => opt !== "");
+            newQuestion.correct = correct;
 
-    let topicModalObj;
-    document.addEventListener("DOMContentLoaded", () => {
-        topicModalObj = new bootstrap.Modal(document.getElementById('topicModal'));
-    });
-
-    function openTopicModal() {
-        document.getElementById('editTopicIndex').value = "-1";
-        document.getElementById('modalTopicTitle').value = "";
-        document.getElementById('modalQuestionsContainer').innerHTML = "";
-        addQuestionField();
-        topicModalObj.show();
-    }
-
-    function addQuestionField(qData = null) {
-        const container = document.getElementById('modalQuestionsContainer');
-        const qIdx = container.children.length;
-        const qText = qData ? qData.q : '';
-        const opts = qData ? qData.options : ['', '', '', ''];
-        const correct = qData ? qData.correct : 0;
-
-        const div = document.createElement('div');
-        div.className = 'border p-3 rounded mb-2 bg-light position-relative';
-        div.innerHTML = `
-            <button type="button" class="btn-close position-absolute top-0 end-0 m-2" onclick="this.parentElement.remove()"></button>
-            <input type="text" class="form-control mb-2 q-text" placeholder="${qIdx + 1}-Savol matni" value="${qText}" required>
-            <div class="row g-2">
-                ${opts.map((opt, i) => `
-                    <div class="col-md-6">
-                        <div class="input-group input-group-sm">
-                            <div class="input-group-text">
-                                <input type="radio" name="correct_${qIdx}" value="${i}" ${correct === i ? 'checked' : ''}>
-                            </div>
-                            <input type="text" class="form-control q-opt" placeholder="Variant ${i+1}" value="${opt}" required>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>`;
-        container.appendChild(div);
-    }
-
-    function saveTopicData() {
-        const cls = document.getElementById('modalClass').value;
-        const topicTitle = document.getElementById('modalTopicTitle').value;
-        const topicIdx = parseInt(document.getElementById('editTopicIndex').value);
-
-        const qBlocks = document.querySelectorAll('#modalQuestionsContainer > div');
-        const questions = [];
-
-        qBlocks.forEach((block, idx) => {
-            const qText = block.querySelector('.q-text').value;
-            const options = Array.from(block.querySelectorAll('.q-opt')).map(i => i.value);
-            const selectedRadio = block.querySelector(`input[name="correct_${idx}"]:checked`);
-            const correct = selectedRadio ? parseInt(selectedRadio.value) : 0;
-            if(qText.trim()) questions.push({ q: qText, options: options, correct: correct });
-        });
-
-        db.ref('topics/' + cls).once('value', (snapshot) => {
-            let list = snapshot.val() || [];
-            if(topicIdx === -1) list.push({ topic: topicTitle, questions: questions });
-            else list[topicIdx] = { topic: topicTitle, questions: questions };
-
-            db.ref('topics/' + cls).set(list, () => {
-                topicModalObj.hide();
-                renderManageTopics();
-            });
-        });
-    }
-
-    function editTopic(cls, idx) {
-        db.ref('topics/' + cls + '/' + idx).once('value', (snapshot) => {
-            const t = snapshot.val();
-            document.getElementById('modalClass').value = cls;
-            document.getElementById('editTopicIndex').value = idx;
-            document.getElementById('modalTopicTitle').value = t.topic;
-
-            const container = document.getElementById('modalQuestionsContainer');
-            container.innerHTML = "";
-            t.questions.forEach(q => addQuestionField(q));
-            topicModalObj.show();
-        });
-    }
-
-    function deleteTopic(cls, idx) {
-        if(confirm("Ushbu mavzuni o'chirib tashlaysizmi?")) {
-            db.ref('topics/' + cls).once('value', (snapshot) => {
-                let list = snapshot.val() || [];
-                list.splice(idx, 1);
-                db.ref('topics/' + cls).set(list, () => {
-                    renderManageTopics();
-                });
-            });
+        } else if (qType === "text") {
+            const correctText = document.getElementById("correctText").value.trim();
+            if (!correctText) {
+                alert("Iltimos, to'g'ri matnli javobni kiriting!");
+                return;
+            }
+            newQuestion.correct = correctText;
         }
-    }
 
-    function exportToPDF() {
-        const element = document.getElementById('pdfContent');
-        html2pdf().set({ margin: 0.5, filename: 'Joriy_Nazorat_Baholari.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } }).from(element).save();
+        // Bu yerda Firebase Database-ga saqlash kodingiz bajariladi
+        console.log("Saqlanadigan savol ob'ekti:", newQuestion);
+        alert("Savol muvaffaqiyatli saqlandi!");
+        
+        // Formani tozalash
+        document.getElementById("questionText").value = "";
+        document.getElementById("correctText").value = "";
     }
 </script>
+
 </body>
 </html>

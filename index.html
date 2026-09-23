@@ -3,204 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informatika - Nazorat va Baholash</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <title>IT Nazorat Testi</title>
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card-custom { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .header-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 15px; }
-        .badge-score { font-size: 1.1rem; padding: 8px 15px; border-radius: 20px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #2c3e50; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .question-card {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .question-title { font-weight: 600; margin-bottom: 10px; color: #34495e; }
+        .option { display: block; margin-bottom: 8px; cursor: pointer; }
+        .text-answer-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            outline: none;
+            font-size: 15px;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #2ecc71;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-submit:hover { background-color: #27ae60; }
     </style>
 </head>
 <body>
 
-<div class="container py-4">
-    <div class="p-3 bg-white card-custom mb-4 text-center">
-        <h4 class="m-0 text-primary"><i class="fa-solid fa-graduation-cap me-2"></i>Bilimni Baholash Tizimi</h4>
+<div class="container">
+    <h2>Informatika va AT — Test Nazorati</h2>
+    
+    <div class="input-group">
+        <label for="studentName">O'quvchi Ismi va Familiyasi:</label>
+        <input type="text" id="studentName" placeholder="Masalan: Shavkatbek Obidov" required>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div id="quizSetupCard" class="card card-custom p-4 mb-4">
-                <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-user-pen me-2"></i>Ma'lumotlarni kiritish</h5>
-                <form id="studentForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Ism va Familiyangiz:</label>
-                            <input type="text" id="studentName" class="form-control" placeholder="Masalan: Ali Valiyev" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Sinfingiz:</label>
-                            <select id="classSelect" class="form-select" onchange="loadTopics()" required>
-                                <option value="">-- Tanlang --</option>
-                                <option value="5">5-sinf</option>
-                                <option value="6">6-sinf</option>
-                                <option value="7">7-sinf</option>
-                                <option value="8">8-sinf</option>
-                                <option value="9">9-sinf</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Mavzu:</label>
-                            <select id="topicSelect" class="form-select" required>
-                                <option value="">-- Avval sinfni tanlang --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success mt-4 w-100 py-2 fw-bold fs-5"><i class="fa-solid fa-play me-2"></i>Testni Boshlash</button>
-                </form>
-            </div>
+    <div id="quizContainer"></div>
 
-            <div id="quizCard" class="card card-custom p-4 d-none">
-                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <span class="badge bg-primary fs-6" id="quizMeta"></span>
-                </div>
-                <div id="questionsContainer"></div>
-                <button class="btn btn-primary w-100 mt-3 py-2 fw-bold fs-5" onclick="submitQuiz()"><i class="fa-solid fa-paper-plane me-2"></i>Javoblarni Topshirish</button>
-            </div>
-
-            <div id="resultCard" class="card card-custom p-4 text-center d-none">
-                <div class="header-bg p-4 mb-3">
-                    <h3 class="m-0">Test Yakunlandi!</h3>
-                </div>
-                <h4 id="resName" class="text-dark fw-bold"></h4>
-                <div class="my-3">
-                    <h3>To'plangan ball: <span id="resScore" class="text-primary">0</span> / <span id="resTotal">0</span></h3>
-                    <h4 class="mt-3">Joriy Nazorat Bahosi: <br><span id="resGrade" class="badge badge-score mt-2 bg-success">5 (A'lo)</span></h4>
-                </div>
-                <p class="text-muted">Natijangiz o'qituvchi bazasiga yuborildi.</p>
-                <button class="btn btn-outline-secondary" onclick="resetQuiz()"><i class="fa-solid fa-rotate-right me-1"></i> Qayta topshirish</button>
-            </div>
-        </div>
-    </div>
+    <button class="btn-submit" onclick="submitQuiz()">Testni Yakunlash</button>
 </div>
 
 <script>
-    // SIZNING FIREBASE KALITLARINGIZ BIRIKTIRILDI
-    const firebaseConfig = {
-        apiKey: "AIzaSyAhKbkXkXN2CXtJYsG9rx7zeH6fItZbWN8",
-        authDomain: "informatika-va-at--nazorat.firebaseapp.com",
-        databaseURL: "https://informatika-va-at--nazorat-default-rtdb.firebaseio.com",
-        projectId: "informatika-va-at--nazorat",
-        storageBucket: "informatika-va-at--nazorat.firebasestorage.app",
-        messagingSenderId: "911253971015",
-        appId: "1:911253971015:web:cab0b7ef93ed999ee11162"
-    };
+    // Test savollari ro'yxati (Variantli va Ochiq matnli)
+    const quizData = [
+        {
+            id: 1,
+            type: "choice", // Variantli savol
+            question: "1. Veb-sahifaning karkasini (tuzilishini) yaratuvchi til qaysi?",
+            options: ["CSS", "HTML", "Python", "JavaScript"],
+            correct: "HTML"
+        },
+        {
+            id: 2,
+            type: "text", // Ochiq matnli savol
+            question: "2. CSS qisqartmasining to'liq nomini yozing:",
+            correct: "Cascading Style Sheets"
+        },
+        {
+            id: 3,
+            type: "text", // Ochiq matnli savol
+            question: "3. Kompyuterning asosiy miyasi hisoblangan qurilma qisqartmasi nimadir?",
+            correct: "CPU"
+        }
+    ];
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Savollarni ekranga chiqarish
+    function renderQuiz() {
+        const container = document.getElementById("quizContainer");
+        container.innerHTML = "";
 
-    let onlineTopics = {};
-    let currentQuestions = [];
-    let currentStudent = {};
+        quizData.forEach((q, index) => {
+            const card = document.createElement("div");
+            card.className = "question-card";
 
-    function loadTopics() {
-        const cls = document.getElementById('classSelect').value;
-        const topicSelect = document.getElementById('topicSelect');
-        topicSelect.innerHTML = '<option value="">Yuklanmoqda...</option>';
+            let content = `<div class="question-title">${q.question}</div>`;
 
-        db.ref('topics/' + cls).once('value', (snapshot) => {
-            topicSelect.innerHTML = '<option value="">-- Mavzuni tanlang --</option>';
-            onlineTopics[cls] = snapshot.val() || [];
-            
-            if (onlineTopics[cls].length > 0) {
-                onlineTopics[cls].forEach((item, index) => {
-                    topicSelect.innerHTML += `<option value="${index}">${item.topic}</option>`;
+            if (q.type === "choice") {
+                q.options.forEach(opt => {
+                    content += `
+                        <label class="option">
+                            <input type="radio" name="q${q.id}" value="${opt}"> ${opt}
+                        </label>
+                    `;
                 });
-            } else {
-                topicSelect.innerHTML = '<option value="">Mavzular mavjud emas</option>';
+            } else if (q.type === "text") {
+                content += `
+                    <input type="text" class="text-answer-input" id="q${q.id}" placeholder="Javobingizni shu yerga yozing...">
+                `;
             }
+
+            card.innerHTML = content;
+            container.appendChild(card);
         });
     }
 
-    document.getElementById('studentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const cls = document.getElementById('classSelect').value;
-        const topicIdx = document.getElementById('topicSelect').value;
-        const name = document.getElementById('studentName').value;
-
-        const selectedData = onlineTopics[cls][topicIdx];
-        currentQuestions = selectedData.questions;
-        currentStudent = { name, class: cls, topic: selectedData.topic };
-
-        document.getElementById('quizSetupCard').classList.add('d-none');
-        document.getElementById('quizCard').classList.remove('d-none');
-        document.getElementById('quizMeta').innerText = `${cls}-sinf | ${selectedData.topic}`;
-
-        renderQuestions();
-    });
-
-    function renderQuestions() {
-        const container = document.getElementById('questionsContainer');
-        container.innerHTML = '';
-
-        currentQuestions.forEach((q, idx) => {
-            let optionsHTML = '';
-            q.options.forEach((opt, oIdx) => {
-                optionsHTML += `
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="q_${idx}" value="${oIdx}" id="q_${idx}_${oIdx}">
-                        <label class="form-check-label fs-6" for="q_${idx}_${oIdx}">${opt}</label>
-                    </div>`;
-            });
-
-            container.innerHTML += `
-                <div class="mb-4 p-3 border rounded bg-light">
-                    <h6 class="fw-bold">${idx + 1}-savol: ${q.q}</h6>
-                    ${optionsHTML}
-                </div>`;
-        });
-    }
-
+    // Natijani hisoblash va jo'natish
     function submitQuiz() {
+        const name = document.getElementById("studentName").value.trim();
+        if (!name) {
+            alert("Iltimos, ismingizni kiriting!");
+            return;
+        }
+
         let score = 0;
-        currentQuestions.forEach((q, idx) => {
-            const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
-            if (selected && parseInt(selected.value) === q.correct) {
-                score++;
+
+        quizData.forEach(q => {
+            if (q.type === "choice") {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                if (selected && selected.value === q.correct) {
+                    score++;
+                }
+            } else if (q.type === "text") {
+                const userAns = document.getElementById(`q${q.id}`).value.trim().toLowerCase();
+                const correctAns = q.correct.trim().toLowerCase();
+                if (userAns === correctAns) {
+                    score++;
+                }
             }
         });
 
-        const total = currentQuestions.length;
-        const percentage = total > 0 ? (score / total) * 100 : 0;
+        alert(`Rahmat ${name}! Siz ${quizData.length} ta savoldan ${score} ta to'g'ri javob berdingiz.`);
         
-        let grade = 2;
-        if (percentage >= 85) grade = 5;
-        else if (percentage >= 70) grade = 4;
-        else if (percentage >= 55) grade = 3;
-
-        const resultData = {
-            name: currentStudent.name,
-            class: currentStudent.class,
-            topic: currentStudent.topic,
-            score: score,
-            total: total,
-            grade: grade,
-            date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString().substr(0,5)
-        };
-
-        db.ref('results').push(resultData);
-
-        document.getElementById('quizCard').classList.add('d-none');
-        document.getElementById('resultCard').classList.remove('d-none');
-        document.getElementById('resName').innerText = currentStudent.name;
-        document.getElementById('resScore').innerText = score;
-        document.getElementById('resTotal').innerText = total;
-        
-        const resGrade = document.getElementById('resGrade');
-        resGrade.innerText = `${grade} (${grade === 5 ? "A'lo" : grade === 4 ? "Yaxshi" : grade === 3 ? "Qoniqarli" : "Qoniqarsiz"})`;
-        resGrade.className = `badge badge-score bg-${grade >= 4 ? 'success' : grade === 3 ? 'warning' : 'danger'}`;
+        // Bu yerda natijani Firebase-ga yuklash kodingiz joylashadi
     }
 
-    function resetQuiz() {
-        document.getElementById('resultCard').classList.add('d-none');
-        document.getElementById('quizSetupCard').classList.remove('d-none');
-        document.getElementById('studentForm').reset();
-    }
+    // Sahifa yuklanganda testni chiqarish
+    renderQuiz();
 </script>
+
 </body>
 </html>
